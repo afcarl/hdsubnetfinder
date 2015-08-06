@@ -1,0 +1,9 @@
+*.pyc
+*.egg-info
+.idea
+.eggs/*
+dist
+.DS_Store
+build/*
+.cache/*
+*.ipynb_checkpoints
