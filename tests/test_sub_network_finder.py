@@ -21,7 +21,6 @@ class SubNetworkFinderTests(unittest.TestCase):
         self.assertIsNotNone(result)
 
         print(json.dumps(result, indent=4))
-        print(type(result))
-        # self.assertEqual('v1', status['apiVersion'])
+        self.assertEqual(list, type(result))
 
         print('\n---------- finder tests finished! -----------\n')

@@ -3,7 +3,7 @@
 
 """
 
-Setup script for hd-subnetfinder
+Setup script for hdsubnetfinder
 
 To install, run:
 

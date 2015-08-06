@@ -2,7 +2,7 @@
 
 import sys
 
-import re, math, os, sys, operator, random
+import operator
 from ndex.client import Ndex as nc
 import ndexUtil as util
 
