@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import sys
 
 import operator
@@ -318,10 +316,6 @@ if __name__ == "__main__":
 
     (opts, args) = parser.parse_args()
 
-
-    # lib_path = os.path.abspath('/Users/danielcarlin/projects/TieDIE/lib')
-    # sys.path.append(lib_path)
-
     # establishes orthology mappers
     if (opts.species == 'human'):
         MGImapper = TableEntityMapper(opts.mgi)
@@ -381,8 +375,6 @@ if __name__ == "__main__":
     queryVec = queryVector(get_these, ker.labels)
 
     diffused = ker.diffuse(queryVec)
-
-    import operator
 
     sorted_diffused = sorted(diffused.items(), key=operator.itemgetter(1), reverse=True)
 
