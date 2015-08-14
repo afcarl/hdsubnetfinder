@@ -11,9 +11,10 @@ print(SAMPLE_KERNEL_URL)
 class KernelTests(unittest.TestCase):
 
     def test_pre_computed_kernel(self):
+        from hdsubnetfinder.kernel.kernel_generator import KernelGenerator
 
-        from hdsubnetfinder.kernel.kernel_from_file import KernelFromFile
-        small_kernel = KernelFromFile(pre_computed_kernel_url=SAMPLE_KERNEL_URL)
+        generator = KernelGenerator()
+        small_kernel = generator.create_kernel_from_file(pre_computed_kernel_url=SAMPLE_KERNEL_URL)
 
         self.assertIsNotNone(small_kernel)
         self.assertIsNotNone(small_kernel.kernel)
@@ -21,6 +22,3 @@ class KernelTests(unittest.TestCase):
 
         self.assertTrue(list, type(small_kernel.labels))
         self.assertTrue(list, type(small_kernel.kernel))
-
-
-        print(small_kernel.labels)

@@ -2,8 +2,10 @@ from array import array
 import time
 import urllib2
 import logging
+import csv
+import numpy as np
 
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csc_matrix
 from scipy.sparse.linalg import expm
 
 from kernel import Kernel
@@ -13,25 +15,42 @@ logging.basicConfig(level=logging.DEBUG)
 
 class KernelGenerator:
 
-    def __init__(self):
-        self.labels = {}
-        # The number of rows and columns for each kernel
-        self.ncols = {}
-        self.nrows = {}
+    def create_kernel_from_file(self, pre_computed_kernel_url):
+        """
+        Input:
+            pre_computed_kernel_file - filename of tab delemited kernel file,
+                                        as made by KernelGenerator
+        """
+        ker = []
+        start = True
+        labels = list()
 
-    def compute_kernel(self, network_url, time_t=0.1):
+        for line in csv.reader(urllib2.urlopen(pre_computed_kernel_url), delimiter='\t'):
+            if start:
+                labels = line[1:]
+                start = False
+            else:
+                ker.append([float(x) for x in line[1:]])
+
+        kernel = csc_matrix(np.asarray(ker))
+        return Kernel(kernel=kernel, labels=labels, index2node=None)
+
+    def create_kernel(self, network_url, time_t=0.1):
         start = time.clock()
+
         edges, nodes, node_out_degrees = self.__parse_net(network_url)
-        self.num_nodes = len(nodes)
+
+        num_nodes = len(nodes)
         node_order = list(nodes)
+
         index2node = {}
         node2index = {}
 
         logging.debug('Network source: ' + str(network_url))
-        logging.debug('# of Nodes: ' + str(self.num_nodes))
+        logging.debug('# of Nodes: ' + str(num_nodes))
         logging.debug('# of Edges: ' + str(len(edges)))
 
-        for i in range(0, self.num_nodes):
+        for i in range(0, num_nodes):
             index2node[i] = node_order[i]
             node2index[node_order[i]] = i
 
@@ -42,8 +61,9 @@ class KernelGenerator:
         row = array('i')
         col = array('i')
         data = array('f')
+
         # build the diagonals, including the out-degree 
-        for i in range(0, self.num_nodes):
+        for i in range(0, num_nodes):
             # diag entries: out degree
             degree = 0
             if index2node[i] in node_out_degrees:
@@ -57,8 +77,8 @@ class KernelGenerator:
             col.insert(len(col), i)
 
             # add off-diagonal edges
-        for i in range(0, self.num_nodes):
-            for j in range(0, self.num_nodes):
+        for i in range(0, num_nodes):
+            for j in range(0, num_nodes):
                 if i == j:
                     continue
                 if (index2node[i], index2node[j]) not in edges:
@@ -71,24 +91,22 @@ class KernelGenerator:
 
         # Build the graph laplacian: the CSC matrix provides a sparse matrix format
         # that can be exponentiated efficiently
-        l = coo_matrix((data, (row, col)), shape=(self.num_nodes, self.num_nodes)).tocsc()
-        self.laplacian = l
-        self.index2node = index2node
+        l = coo_matrix((data, (row, col)), shape=(num_nodes, num_nodes)).tocsc()
 
         end = time.clock()
         logging.debug('Data preparation done in ' + str(end - start) + ' sec.')
 
-        start = time.clock()
         # this is the matrix exponentiation calculation.
         # Uses the Pade approximiation for accurate approximation.
         # Computationally expensive.
         # O(n^2), n= # of features, in memory as well. 
-        self.kernel = expm(-time_t * l)
-        self.labels = node_order
+        start = time.clock()
+        kernel = expm(-time_t * l)
         end = time.clock()
+
         logging.debug('expm done in ' + str(end - start) + ' sec.')
 
-        return Kernel(kernel=self.kernel, labels=self.labels)
+        return Kernel(kernel=kernel, labels=node_order, index2node=index2node)
 
     def __parse_net(self, network_url):
         """
@@ -128,34 +146,3 @@ class KernelGenerator:
             degrees[target] += 1
 
         return edges, nodes, degrees
-
-    def write_kernel(self, output_file):
-        """
-        Serialize the kernel to the supplied output file
-        """
-        output_stream = open(output_file, 'w')
-
-        cx = self.kernel.tocoo()
-        edges = {}
-        for i, j, v in zip(cx.row, cx.col, cx.data):
-            a = self.index2node[i]
-            b = self.index2node[j]
-            edges[(a, b)] = str(v)
-
-        # iterate through rows
-        # sort labels in alphabetical order
-
-        output_stream.write("Key\t" + "\t".join(sorted(self.labels)) + "\n")
-
-        for nodeA in sorted(self.labels):
-            printstr = nodeA
-            # through columns
-            for nodeB in sorted(self.labels):
-                if (nodeA, nodeB) in edges:
-                    printstr += "\t" + edges[(nodeA, nodeB)]
-                else:
-                    printstr += "\t0"
-
-            output_stream.write(printstr + "\n")
-
-        output_stream.close()

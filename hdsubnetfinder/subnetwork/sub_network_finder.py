@@ -19,13 +19,18 @@ class SubNetworkFinder():
         :param network: Network as triples
         :return:
         """
+        if kernel is None:
+            raise ValueError('Kernel is required.')
+        if network is None:
+            raise ValueError('Network is required.')
+
         self.__kernel = kernel
         self.__network = network
 
     def get_sub_network(self, identifiers):
-
         query_vector = util.query_vector(identifiers, self.__kernel.labels)
         diffused = self.__kernel.diffuse(query_vector)
         filtered = util.filter_sif(self.__network, diffused)
 
+        # Return result in CX format.
         return util.sif2cx(filtered, scores=diffused)

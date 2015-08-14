@@ -2,6 +2,7 @@
 
 import unittest
 import os
+from hdsubnetfinder.kernel.kernel_generator import KernelGenerator
 
 KERNEL_LOCATION = 'resource/kernel.txt'
 k_file = os.path.abspath(os.path.dirname(__file__)) + '/' + KERNEL_LOCATION
@@ -20,10 +21,11 @@ class SubNetworkFinderTests(unittest.TestCase):
 
         from hdsubnetfinder.subnetwork.sub_network_finder import SubNetworkFinder
         import hdsubnetfinder.subnetwork.network_util as util
-        from hdsubnetfinder.kernel.kernel_from_file import KernelFromFile
+
 
         # Create kernel from pre-computed kernel file
-        small_kernel = KernelFromFile(pre_computed_kernel_url=SAMPLE_KERNEL_URL)
+        generator = KernelGenerator()
+        small_kernel = generator.create_kernel_from_file(pre_computed_kernel_url=SAMPLE_KERNEL_URL)
         small_sif = util.read_sif(file_url=NETWORK_URL)
 
         finder = SubNetworkFinder(network=small_sif, kernel=small_kernel)
@@ -47,7 +49,7 @@ class SubNetworkFinderTests(unittest.TestCase):
         from hdsubnetfinder.kernel.kernel_generator import KernelGenerator
 
         generator = KernelGenerator()
-        small_kernel = generator.compute_kernel(network_url=NETWORK_URL)
+        small_kernel = generator.create_kernel(network_url=NETWORK_URL)
         small_sif = util.read_sif(file_url=NETWORK_URL)
 
         finder = SubNetworkFinder(network=small_sif, kernel=small_kernel)
@@ -61,23 +63,23 @@ class SubNetworkFinderTests(unittest.TestCase):
 
         print('\n---------- finder tests2 finished! -----------\n')
 
-    def test_find_sub_network3(self):
-        from hdsubnetfinder.subnetwork.sub_network_finder import SubNetworkFinder
-        import hdsubnetfinder.subnetwork.network_util as util
-        from hdsubnetfinder.kernel.kernel_generator import KernelGenerator
-
-        generator = KernelGenerator()
-        med_network = 'https://s3-us-west-2.amazonaws.com/ci-service-data/yeastHighQuality.sif'
-        med_kernel = generator.compute_kernel(network_url=med_network)
-        med_sif = util.read_sif(file_url=med_network)
-
-        finder = SubNetworkFinder(network=med_sif, kernel=med_kernel)
-
-        identifiers = ["YNL031C", "YNL145W"]
-
-        result = finder.get_sub_network(identifiers)
-        self.assertIsNotNone(result)
-        print(len(result))
-        self.assertEqual(list, type(result))
-
-        print('\n---------- finder tests2 finished! -----------\n')
+    # def test_find_sub_network3(self):
+    #     from hdsubnetfinder.subnetwork.sub_network_finder import SubNetworkFinder
+    #     import hdsubnetfinder.subnetwork.network_util as util
+    #     from hdsubnetfinder.kernel.kernel_generator import KernelGenerator
+    #
+    #     generator = KernelGenerator()
+    #     med_network = 'https://s3-us-west-2.amazonaws.com/ci-service-data/yeastHighQuality.sif'
+    #     med_kernel = generator.create_kernel(network_url=med_network)
+    #     med_sif = util.read_sif(file_url=med_network)
+    #
+    #     finder = SubNetworkFinder(network=med_sif, kernel=med_kernel)
+    #
+    #     identifiers = ["YNL031C", "YNL145W"]
+    #
+    #     result = finder.get_sub_network(identifiers)
+    #     self.assertIsNotNone(result)
+    #     print(len(result))
+    #     self.assertEqual(list, type(result))
+    #
+    #     print('\n---------- finder tests2 finished! -----------\n')

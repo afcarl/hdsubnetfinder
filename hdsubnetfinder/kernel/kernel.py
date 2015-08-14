@@ -3,7 +3,7 @@
 
 class Kernel:
 
-    def __init__(self, kernel=None, labels=None):
+    def __init__(self, kernel=None, labels=None, index2node=None):
         if labels is None:
             raise ValueError('labels are required.')
 
@@ -12,6 +12,7 @@ class Kernel:
 
         self.labels = labels
         self.kernel = kernel
+        self.index2node = index2node
 
     def kernel_multiply_one(self, vector):
         """

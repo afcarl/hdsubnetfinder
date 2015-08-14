@@ -15,17 +15,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='hdsubnetfinder',
-    version='0.1.0',
+    version='0.2.0',
     description='Heat Diffusion Sub-network Finder',
     long_description='Sub-network finder using heat diffusion simulation.',
-    author='Daniel Carlin',
+    author='Daniel Carlin, Keiichiro Ono',
     author_email='kono@ucsd.edu',
     url='https://github.com/idekerlab/hdsubnetfinder',
     license='MIT License',
     install_requires=[
         'requests',
-        'ndex',
-        'python-igraph',
         'pyparsing',
         'numpy',
         'scipy'
