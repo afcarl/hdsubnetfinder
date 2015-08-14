@@ -6,6 +6,8 @@ import logging
 from scipy.sparse import coo_matrix
 from scipy.sparse.linalg import expm
 
+from kernel import Kernel
+
 logging.basicConfig(level=logging.DEBUG)
 
 
@@ -20,16 +22,16 @@ class KernelGenerator:
     def compute_kernel(self, network_url, time_t=0.1):
         start = time.clock()
         edges, nodes, node_out_degrees = self.__parse_net(network_url)
-        num_nodes = len(nodes)
+        self.num_nodes = len(nodes)
         node_order = list(nodes)
         index2node = {}
         node2index = {}
 
         logging.debug('Network source: ' + str(network_url))
-        logging.debug('# of Nodes: ' + str(num_nodes))
+        logging.debug('# of Nodes: ' + str(self.num_nodes))
         logging.debug('# of Edges: ' + str(len(edges)))
 
-        for i in range(0, num_nodes):
+        for i in range(0, self.num_nodes):
             index2node[i] = node_order[i]
             node2index[node_order[i]] = i
 
@@ -41,7 +43,7 @@ class KernelGenerator:
         col = array('i')
         data = array('f')
         # build the diagonals, including the out-degree 
-        for i in range(0, num_nodes):
+        for i in range(0, self.num_nodes):
             # diag entries: out degree
             degree = 0
             if index2node[i] in node_out_degrees:
@@ -55,8 +57,8 @@ class KernelGenerator:
             col.insert(len(col), i)
 
             # add off-diagonal edges
-        for i in range(0, num_nodes):
-            for j in range(0, num_nodes):
+        for i in range(0, self.num_nodes):
+            for j in range(0, self.num_nodes):
                 if i == j:
                     continue
                 if (index2node[i], index2node[j]) not in edges:
@@ -69,7 +71,7 @@ class KernelGenerator:
 
         # Build the graph laplacian: the CSC matrix provides a sparse matrix format
         # that can be exponentiated efficiently
-        l = coo_matrix((data, (row, col)), shape=(num_nodes, num_nodes)).tocsc()
+        l = coo_matrix((data, (row, col)), shape=(self.num_nodes, self.num_nodes)).tocsc()
         self.laplacian = l
         self.index2node = index2node
 
@@ -86,21 +88,53 @@ class KernelGenerator:
         end = time.clock()
         logging.debug('expm done in ' + str(end - start) + ' sec.')
 
-    def get_labels(self):
-        """
-            Return the set of all node/gene labels used by this kernel object
-        """
-        all_labels = set()
-        for label in self.labels:
-            print(label)
-            all_labels = all_labels.union(set(self.labels[label]))
+        return Kernel(kernel=self.kernel, labels=self.labels)
 
-        return all_labels
+    def __parse_net(self, network_url):
+        """
+        Parse .sif network, using just the first and third columns
+        to build an undirected graph. Store the node out-degrees
+        in an index while we're at it. 
+        """
+        edges = set()
+        nodes = set()
+        degrees = {}
 
-    def get_kernel(self, output_stream):
+        for line in urllib2.urlopen(network_url):
+            parts = line.rstrip().split()
+            source = parts[0]
+            target = parts[2]
+
+            # if inputting a multi-graph, skip this
+            if (source, target) in edges:
+                continue
+
+            # Remove self-loop
+            if source == target:
+                continue
+
+            edges.add((source, target))
+            edges.add((target, source))
+
+            nodes.add(source)
+            nodes.add(target)
+
+            if source not in degrees:
+                degrees[source] = 0
+            if target not in degrees:
+                degrees[target] = 0
+
+            degrees[source] += 1
+            degrees[target] += 1
+
+        return edges, nodes, degrees
+
+    def write_kernel(self, output_file):
         """
-        Write the computer kernel to the supplied output file
+        Serialize the kernel to the supplied output file
         """
+        output_stream = open(output_file, 'w')
+
         cx = self.kernel.tocoo()
         edges = {}
         for i, j, v in zip(cx.row, cx.col, cx.data):
@@ -115,7 +149,7 @@ class KernelGenerator:
 
         for nodeA in sorted(self.labels):
             printstr = nodeA
-            # through columns       
+            # through columns
             for nodeB in sorted(self.labels):
                 if (nodeA, nodeB) in edges:
                     printstr += "\t" + edges[(nodeA, nodeB)]
@@ -124,51 +158,4 @@ class KernelGenerator:
 
             output_stream.write(printstr + "\n")
 
-        return output_stream.getvalue()
-
-    def __print_laplacian(self):
-        """
-        Debug function
-        """
-        cx = self.laplacian.tocoo()
-        for i, j, v in zip(cx.row, cx.col, cx.data):
-            a = self.index2node[i]
-            b = self.index2node[j]
-            print "\t".join([a, b, str(v)])
-
-    def __parse_net(self, network_url):
-        """
-        Parse .sif network, using just the first and third columns
-        to build an undirected graph. Store the node out-degrees
-        in an index while we're at it. 
-        """
-        edges = set()
-        nodes = set()
-        degrees = {}
-
-        for line in urllib2.urlopen(network_url):
-
-            parts = line.rstrip().split()
-            source = parts[0]
-            target = parts[2]
-
-            # if inputting a multi-graph, skip this
-            if (source, target) in edges:
-                continue
-            if source == target:
-                continue
-
-            edges.add((source, target))
-            edges.add((target, source))
-            nodes.add(source)
-            nodes.add(target)
-
-            if source not in degrees:
-                degrees[source] = 0
-            if target not in degrees:
-                degrees[target] = 0
-
-            degrees[source] += 1
-            degrees[target] += 1
-
-        return edges, nodes, degrees
+        output_stream.close()

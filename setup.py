@@ -20,14 +20,15 @@ setup(
     long_description='Sub-network finder using heat diffusion simulation.',
     author='Daniel Carlin',
     author_email='kono@ucsd.edu',
-    url='https://github.com/idekerlab/py2cytoscape',
+    url='https://github.com/idekerlab/hdsubnetfinder',
     license='MIT License',
     install_requires=[
         'requests',
         'ndex',
         'python-igraph',
         'pyparsing',
-        'numpy'
+        'numpy',
+        'scipy'
     ],
     keywords=['bioinformatics', 'graph', 'network', 'cytoscape'],
     classifiers=[
@@ -45,4 +46,3 @@ setup(
     packages=find_packages(),
     include_package_data=True,
 )
-

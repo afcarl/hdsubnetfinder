@@ -7,3 +7,4 @@ dist
 build/*
 .cache/*
 *.ipynb_checkpoints
+*kernel_out.txt
