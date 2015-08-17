@@ -120,6 +120,11 @@ class KernelGenerator:
 
         for line in urllib2.urlopen(network_url):
             parts = line.rstrip().split()
+
+            # Remove orphan node
+            if len(parts) != 3:
+                continue
+
             source = parts[0]
             target = parts[2]
 
